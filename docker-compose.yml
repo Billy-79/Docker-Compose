@@ -1,0 +1,79 @@
+version: '3'
+
+services:
+
+  mysql:
+    container_name: MySQL
+    image: mysql
+    environment:
+      MYSQL_DATABASE: mywordpress
+      MYSQL_USER: billy
+      MYSQL_PASSWORD: pass
+      MYSQL_ROOT_PASSWORD: root
+    ports:
+      - 3306:3306
+    restart: always
+    networks:
+      skynet:
+        ipv4_address: 192.168.92.21
+    volumes:
+      - ./mysqldata:/var/lib/mysql  
+    
+  phpmyadmin:
+    container_name: phpMyAdmin
+    image: phpmyadmin
+    depends_on:
+      - mysql
+    ports:
+      - 8090:80
+    restart: always
+    networks:
+      skynet:
+        ipv4_address: 192.168.92.22
+    links:
+      - mysql
+    environment:
+      PMA_HOST: mysql
+      PMA_PORT: 3306  
+    
+  wordpress:
+    container_name: WordPress
+    image: wordpress
+    depends_on:
+      - mysql
+    ports:
+      - 8080:80
+    restart: always
+    networks:
+      skynet:
+        ipv4_address: 192.168.92.23
+    environment:
+      WORDPRESS_DB_HOST: mysql
+      WORDPRESS_DB_USER: root
+      WORDPRESS_DB_PASSWORD: root
+      WORDPRESS_DB_NAME: mywordpress
+    volumes:
+      - ./wordpress:/var/www/html
+    
+  jupyter-lab:
+    container_name: Jupyter-lab
+    build:
+      context: ./
+      dockerfile: jupyter.dockerfile
+    volumes:
+      - ./jupyter:/lab
+    working_dir: /lab
+    ports:
+      - 8888:8888
+    restart: always
+    networks:
+      skynet:
+        ipv4_address: 192.168.92.24
+    command: jupyter-lab --ip=0.0.0.0 --allow-root --NotebookApp.token=''
+
+networks:
+  skynet:
+    ipam:
+      driver: default
+      config:
+        - subnet: 192.168.92.0/24
